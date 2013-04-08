@@ -7,6 +7,8 @@
 #define	buf_size 64		/* max buf length */
 #define	input_len 128		/* input length	*/
 
+#define	NOT_REGISTERED -1
+
 char IBAN['Z' + 1]['Z' + 1];
 
 char
@@ -67,15 +69,20 @@ check_iban(const char *const input, int len) {
     return 1;
   }
 
+  // get uppercase 2-alpha country code
+  i = buf[0] = toupper(buf[0]);
+  j = buf[1] = toupper(buf[1]);
+
   // check if country is registered
+  if (IBAN[i][j] == NOT_REGISTERED) {
+    fprintf(stderr, "Country '%c%c' unknown\n", i, j);
+    return 1;
+  }
 
   // check iban length
-  i = buf[0];
-  j = buf[1];
-
   if (IBAN[i][j] != len) {
-    fprintf(stderr, "IBAN '%s' length is %d, but for country %c%c it is %d\n",
-        buf, len, buf[0], buf[1], IBAN[i][j]);
+    fprintf(stderr, "IBAN '%s' length is %d, but should be %d\n",
+        buf, len, IBAN[i][j]);
     return 1;
   }
 
@@ -83,8 +90,8 @@ check_iban(const char *const input, int len) {
   // convert 'DE' to '1314' append '131487'
   snprintf(buf, buf_size - 1, "%s%d%d%c%c", 
       buf,
-      buf[0] - 55, buf[1] - 55,	// 'DE' country code
-      buf[2], buf[3]			// 87
+      buf[0] - 55, buf[1] - 55,
+      buf[2], buf[3]
       );
 
   if (i < 0) {
@@ -99,9 +106,7 @@ check_iban(const char *const input, int len) {
   //output: '1111222233338888131487'
   printf("output: '%s'\n", result);
 
-//  printf("output: '%s'\n", result);
-
-#if 1
+#if 0
   char *p;
 
   errno = 0;
@@ -118,11 +123,17 @@ check_iban(const char *const input, int len) {
   if (n % 97 == 1) return 0;
 #endif
 
-  return 1;
+  return 0;
 }
 
 int
 main(int argc, char *argv[]) {
+  int i, j;
+  for (i = 0; i <= 'Z'; i++) {
+    for (j = 0; j <= 'Z'; j++) {
+      IBAN[i][j] = NOT_REGISTERED;
+    }
+  }
 
   IBAN['A']['L'] = 28; IBAN['A']['D'] = 24; IBAN['A']['T'] = 20;
   IBAN['A']['Z'] = 28; IBAN['B']['H'] = 22; IBAN['B']['E'] = 16;
